@@ -365,6 +365,12 @@ class Utility {
     return url
   }()
 
+  static let pluginsURL: URL = {
+    let url = Utility.appSupportDirUrl.appendingPathComponent(AppData.pluginsFolder, isDirectory: true)
+    createDirIfNotExist(url: url)
+    return url
+  }()
+
   static let thumbnailCacheURL: URL = {
     // get path
     let cachesPath = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
