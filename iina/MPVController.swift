@@ -403,6 +403,10 @@ class MPVController: NSObject {
     return mpv_command_string(mpv, rawString)
   }
 
+  func observe(property: String) {
+    mpv_observe_property(mpv, 0, property, MPV_FORMAT_NONE)
+  }
+
   // Set property
   func setFlag(_ name: String, _ flag: Bool) {
     var data: Int = flag ? 1 : 0
@@ -645,6 +649,11 @@ class MPVController: NSObject {
       // let eventName = String(cString: mpv_event_name(eventId))
       // Utility.log("mpv event (unhandled): \(eventName)")
       break
+    }
+
+    let eventName = String(cString: mpv_event_name(eventId))
+    if let listeners = player.pluginMPVEventListeners[eventName] {
+      listeners.forEach { $0.call() }
     }
   }
 
@@ -908,6 +917,24 @@ class MPVController: NSObject {
       DispatchQueue.main.async {
         self.player.mainWindow.quickSettingView.reload()
       }
+    }
+
+    if let listeners = player.pluginMPVPropertyListeners[name] {
+      // FIXME: better convert to JSValue before passing to call()
+      let data: Any
+      switch property.format {
+      case MPV_FORMAT_FLAG:
+        data = property.data.bindMemory(to: Bool.self, capacity: 1).pointee
+      case MPV_FORMAT_INT64:
+        data = property.data.bindMemory(to: Int64.self, capacity: 1).pointee
+      case MPV_FORMAT_DOUBLE:
+        data = property.data.bindMemory(to: Double.self, capacity: 1).pointee
+      case MPV_FORMAT_STRING:
+        data = property.data.bindMemory(to: String.self, capacity: 1).pointee
+      default:
+        data = 0
+      }
+      listeners.forEach { $0.call(data) }
     }
   }
 
