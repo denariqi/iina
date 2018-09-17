@@ -1343,7 +1343,7 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
     }
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
-    
+
     setWindowFloatingOnTop(false)
 
     thumbnailPeekView.isHidden = true
@@ -1556,6 +1556,8 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       controlBarFloating.xConstraint.constant = xPos
       controlBarFloating.yConstraint.constant = yPos
     }
+
+    player.events.emit(.windowResized, data: window.frame)
   }
 
   // resize framebuffer in videoView after resizing.
@@ -1570,6 +1572,11 @@ class MainWindowController: NSWindowController, NSWindowDelegate {
       videoView.videoLayer.contentsScale = window!.backingScaleFactor
     }
 
+  }
+
+  func windowDidMove(_ notification: Notification) {
+    guard let window = window else { return }
+    player.events.emit(.windowMoved, data: window.frame)
   }
 
   // MARK: - Window delegate: Active status
@@ -2817,6 +2824,7 @@ extension MainWindowController: PIPViewControllerDelegate {
     pipOverlayView.isHidden = false
 
     videoView.videoLayer.draw(forced: true)
+    player.events.emit(.pipChanged, data: true)
   }
 
   func exitPIP() {
@@ -2827,6 +2835,7 @@ extension MainWindowController: PIPViewControllerDelegate {
       // is chosen in this case. See https://bugs.swift.org/browse/SR-8956.
       pip.dismiss(pipVideo!)
     }
+    player.events.emit(.pipChanged, data: false)
   }
 
   func doneExitingPIP() {
